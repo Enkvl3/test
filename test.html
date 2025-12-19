@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Cinema</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      animation: fadeDown 0.8s ease;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #c7d2fe;
+      margin-bottom: 25px;
+      animation: fadeDown 1s ease;
+    }
+
+    /* 🔍 SEARCH */
+    .search-box {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .search-box input {
+      width: 300px;
+      padding: 12px;
+      border-radius: 25px;
+      border: none;
+      outline: none;
+      font-size: 15px;
+    }
+
+    /* 🎬 GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 25px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeUp 0.8s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-10px) scale(1.03);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .card img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .card h3 {
+      margin: 10px 0;
+      font-size: 17px;
+    }
+
+    .card button {
+      width: 100%;
+      padding: 10px;
+      background: #2563eb;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s ease;
+    }
+
+    .card button:hover {
+      background: #1d4ed8;
+    }
+
+    /* 💳 MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .box {
+      background: #0f172a;
+      padding: 20px;
+      border-radius: 14px;
+      width: 320px;
+      animation: zoomIn 0.4s ease;
+    }
+
+    .box img {
+      display: block;
+      margin: auto;
+    }
+
+    .close {
+      margin-top: 10px;
+      background: #475569;
+    }
+
+    /* ✨ ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🎬 КИНО САН</h1>
+<div class="subtitle">Сайн чанарын киног манайхаас</div>
+
+<!-- 🔍 SEARCH -->
+<div class="search-box">
+  <input type="text" id="search" placeholder="Кино хайх..." onkeyup="searchMovie()">
+</div>
+
+<!-- 🎬 MOVIE GRID -->
+<div id="movieGrid" class="grid"></div>
+
+<!-- 💳 PAYMENT MODAL -->
+<div id="payModal" class="modal">
+  <div class="box">
+    <h3 id="movieTitle"></h3>
+    <p>Үнэ: <b>5000₮</b></p>
+
+    <h4>📱 QPAY</h4>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEST-QPAY">
+
+    <hr>
+
+    <p><b>Хаан банк данс:</b> 850005005119452448</p>
+    <p><b>Хүлээн авагчийн нэр:</b> ЭРДЭНЭЧИМЭГ ЭНХХҮСЛЭН</p>
+    <p><b>Гүйлгээний утга:</b> FACEBOOK нэр</p>
+
+    <button onclick="checkPayment()">Төлбөр шалгах (TEST)</button>
+    <button class="close" onclick="closePay()">Хаах</button>
+  </div>
+</div>
+
+<script>
+  const movies = [
+    {
+      title: "Kimetsu No Yaiba The Movie: Infinity Castle",
+      image: "zurag/kimetsu.jpg",
+      link: "https://drive.google.com/file/d/1YKnKgu86VUkuXwr_aT4ulZ_Ry0wXRAHa/view"
+    },
+    {
+      title: "Kimi no Na Wa",
+      image: "zurag/kiminonawa.jpg",
+      link: "https://drive.google.com/file/d/1rei_sYI4KCwOVyY5bPumoCSL4-_cXdAU/view"
+    },
+    {
+      title: "kimi no suizou wo tabetai",
+      image: "zurag/kiminosuzui.jpg",
+      link: "https://drive.google.com/file/d/1nokoex0oPp3lFRd1ARJ0-d-2Oc4h7mxo/view?usp=drive_link"
+    }
+  ];
+
+  const grid = document.getElementById("movieGrid");
+  let currentLink = "";
+
+  function renderMovies(list) {
+    grid.innerHTML = "";
+    list.forEach(movie => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${movie.image}">
+        <h3>${movie.title}</h3>
+        <button onclick="openPay('${movie.title}', '${movie.link}')">Үзэх</button>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  renderMovies(movies);
+
+  function searchMovie() {
+    const q = document.getElementById("search").value.toLowerCase();
+    const filtered = movies.filter(m =>
+      m.title.toLowerCase().includes(q)
+    );
+    renderMovies(filtered);
+  }
+
+  function openPay(title, link) {
+    document.getElementById("movieTitle").innerText = title;
+    currentLink = link;
+    document.getElementById("payModal").style.display = "flex";
+  }
+
+  function closePay() {
+    document.getElementById("payModal").style.display = "none";
+  }
+
+  function checkPayment() {
+    alert("✅ Төлбөр баталгаажлаа ");
+    window.location.href = currentLink;
+  }
+</script>
+
+</body>
+</html>
